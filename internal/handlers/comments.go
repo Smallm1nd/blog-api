@@ -25,12 +25,12 @@ func CreateComment(s *server.Server) http.HandlerFunc {
 
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
-			http.Error(w, "Inviled JSON", http.StatusBadRequest)
+			http.Error(w, "Invalid JSON", http.StatusBadRequest)
 			return
 		}
 
 		if req.Content == "" || req.PostID == 0 || req.UserID == 0 {
-			http.Error(w, "Invailed JSON", http.StatusBadRequest)
+			http.Error(w, "Invalid JSON", http.StatusBadRequest)
 			return
 		}
 
@@ -39,7 +39,7 @@ func CreateComment(s *server.Server) http.HandlerFunc {
 			req.UserID, req.PostID, req.Content).Scan(&resp.ID, &resp.CreatedAt)
 
 		if err != nil {
-			http.Error(w, "Failed to creat comment", http.StatusInternalServerError)
+			http.Error(w, "Failed to create comment", http.StatusInternalServerError)
 			return
 		}
 
@@ -47,7 +47,7 @@ func CreateComment(s *server.Server) http.HandlerFunc {
 		resp.PostID = req.PostID
 		resp.UserID = req.UserID
 
-		w.Header().Set("Comtent-Type", "application/json")
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(resp)
 
@@ -93,7 +93,13 @@ func DeleteComment(s *server.Server) http.HandlerFunc {
 			return
 		}
 
-		commentID, err := strconv.Atoi(strings.TrimPrefix(strings.TrimPrefix(r.URL.Path, "/posts/"), "/comments/"))
+		pathParts := strings.Split(r.URL.Path, "/")
+		if len(pathParts) != 3 {
+			http.Error(w, "Page not found", http.StatusNotFound)
+			return
+		}
+
+		commentID, err := strconv.Atoi(pathParts[2])
 		if err != nil {
 			http.Error(w, "Page not found", http.StatusNotFound)
 			return

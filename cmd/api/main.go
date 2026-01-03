@@ -16,7 +16,7 @@ func main() {
 		log.Fatal("conect to database failed ", err)
 	}
 	defer db.Close()
-	fmt.Println("✅ Connected to database!")
+	fmt.Println(">>>> Connected to database!")
 
 	srv := server.NewServer(db)
 
@@ -28,13 +28,31 @@ func main() {
 	http.HandleFunc("/posts", handlers.PostsSpecialHandler(srv))
 
 	http.HandleFunc("/posts/", func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasSuffix(r.URL.Path, "/comments") {
+		path := r.URL.Path
+
+		if strings.HasSuffix(path, "/comments") {
 			handlers.GetAllPostsComments(srv)(w, r)
+		} else if strings.HasSuffix(path, "/likes") {
+			switch r.Method {
+			case http.MethodGet:
+				handlers.GetLikes(srv)(w, r)
+			case http.MethodPost:
+				handlers.LikePost(srv)(w, r)
+			case http.MethodDelete:
+				handlers.UnlikePost(srv)(w, r)
+			default:
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			}
 		} else {
-			handlers.GetPost(srv)(w, r)
+
+			if r.Method == http.MethodGet {
+				handlers.GetPost(srv)(w, r)
+			} else {
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			}
 		}
 	})
 
-	fmt.Println("🚀 Server starting on :8080...")
+	fmt.Println(">>>> Server starting on :8080...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

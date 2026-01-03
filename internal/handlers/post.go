@@ -24,7 +24,7 @@ func CreatePost(s *server.Server) http.HandlerFunc {
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, "Inviled JSON", http.StatusBadRequest)
+			http.Error(w, "Invalid JSON", http.StatusBadRequest)
 			return
 		}
 
@@ -114,12 +114,12 @@ func GetAllPosts(s *server.Server) http.HandlerFunc {
 		var offset int = (page - 1) * limit
 
 		rows, err := s.DB.Query(`
-		SELECT * FROM posts
+		SELECT  id, title, content, user_id, created_at FROM posts
 		ORDER BY created_at DESC
 		LIMIT $1 OFFSET $2
 		`, limit, offset)
 		if err != nil {
-			http.Error(w, "invilad rows", http.StatusInternalServerError)
+			http.Error(w, "Database error", http.StatusInternalServerError)
 			return
 		}
 		defer rows.Close()
@@ -140,7 +140,12 @@ func GetAllPosts(s *server.Server) http.HandlerFunc {
 		}
 
 		var total int
-		s.DB.QueryRow("SELECT COUNT(*) FROM posts").Scan(&total)
+		err = s.DB.QueryRow("SELECT COUNT(*) FROM posts").Scan(&total)
+
+		if err != nil {
+			http.Error(w, "Database error", http.StatusInternalServerError)
+			return
+		}
 
 		resp := map[string]interface{}{
 			"posts": posts,
